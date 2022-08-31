@@ -1,0 +1,3 @@
+[submodule "3rdparty/bitfield-c"]
+	path = 3rdparty/bitfield-c
+	url = https://github.com/openxc/bitfield-c.git

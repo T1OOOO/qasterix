@@ -59,6 +59,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(header_path ${QASTERIX_SOURCE_DIR}/include/qasterix)
 set(dependency_path ${QASTERIX_SOURCE_DIR}/3rdparty)
+set(bitfield_path ${dependency_path}/bitfield-c/src/bitfield)
 set(source_path ${QASTERIX_SOURCE_DIR}/src)
 
 set(public_headers
@@ -79,11 +80,11 @@ set(asterix_headers
 )
 
 set(bitfield_sources
-    ${dependency_path}/bitfield-c/bitfield.h
-    ${dependency_path}/bitfield-c/8byte.h
-    ${dependency_path}/bitfield-c/bitfield.c
-    ${dependency_path}/bitfield-c/bitarray.c
-    ${dependency_path}/bitfield-c/8byte.c
+    ${bitfield_path}/bitfield.h
+    ${bitfield_path}/8byte.h
+    ${bitfield_path}/bitfield.c
+    ${bitfield_path}/bitarray.c
+    ${bitfield_path}/8byte.c
 )
 
 set(asterix_sources
@@ -102,8 +103,7 @@ include(GenerateExportHeader)
 generate_export_header(qasterix EXPORT_FILE_NAME ${CMAKE_CURRENT_SOURCE_DIR}/include/qasterix/export/qasterix_export.h)
 target_compile_definitions(qasterix PUBLIC "$<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:QASTERIX_STATIC_DEFINE>")
 
-list(APPEND public_headers
-    "${CMAKE_CURRENT_BINARY_DIR}/include/qasterix/export/qasterix_export.h")
+list(APPEND public_headers "${CMAKE_CURRENT_SOURCE_DIR}/include/qasterix/export/qasterix_export.h")
 
 set(sources
     ${public_headers}
