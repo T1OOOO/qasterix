@@ -5,7 +5,7 @@
 #include <QFile>
 #include <QtDebug>
 
-#include "3rdparty/bitfield-c/bitfield.h"
+#include "3rdparty/bitfield-c/src/bitfield/bitfield.h"
 
 #include "asterixconfigkeeper.h"
 #include "asterixnames.h"
