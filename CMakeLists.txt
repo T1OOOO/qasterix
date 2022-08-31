@@ -59,8 +59,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(header_path ${QASTERIX_SOURCE_DIR}/include/qasterix)
 set(dependency_path ${QASTERIX_SOURCE_DIR}/3rdparty)
-set(bitfield_path ${dependency_path}/bitfield-c/src/bitfield)
+set(bitfield_path ${dependency_path}/bitfield-c/src)
 set(source_path ${QASTERIX_SOURCE_DIR}/src)
+
+include_directories(${bitfield_path})
 
 set(public_headers
     ${header_path}/AsterixLibrary
@@ -80,11 +82,11 @@ set(asterix_headers
 )
 
 set(bitfield_sources
-    ${bitfield_path}/bitfield.h
-    ${bitfield_path}/8byte.h
-    ${bitfield_path}/bitfield.c
-    ${bitfield_path}/bitarray.c
-    ${bitfield_path}/8byte.c
+    ${bitfield_path}/bitfield/bitfield.h
+    ${bitfield_path}/bitfield/8byte.h
+    ${bitfield_path}/bitfield/bitfield.c
+    ${bitfield_path}/bitfield/bitarray.c
+    ${bitfield_path}/bitfield/8byte.c
 )
 
 set(asterix_sources
