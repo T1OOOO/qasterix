@@ -62,6 +62,7 @@ set(dependency_path ${QASTERIX_SOURCE_DIR}/3rdparty)
 set(bitfield_path ${dependency_path}/bitfield-c/src)
 set(source_path ${QASTERIX_SOURCE_DIR}/src)
 
+include_directories(${header_path})
 include_directories(${bitfield_path})
 
 set(public_headers

@@ -4,6 +4,8 @@
 #include <QDataStream>
 #include <QDomDocument>
 #include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QtDebug>
 
 #include "3rdparty/bitfield-c/src/bitfield/bitfield.h"
@@ -19,6 +21,12 @@ constexpr int defaultFSPEC_len = 10;
 namespace qasterix {
 
 AsterixEncoder::AsterixEncoder(QObject *parent) : QObject{parent} {}
+
+QByteArray AsterixEncoder::encode(const quint8 catNum, const QString &objStr) {
+  const QVariantMap obj = parseJson(objStr);
+
+  return encode(catNum, objStr);
+}
 
 QByteArray AsterixEncoder::encode(const quint8 catNum, const QVariantMap &obj) {
   if (obj.isEmpty()) {
@@ -249,8 +257,10 @@ AsterixEncoder::encode_fixed(QVariant &data_asterix,
 
         quint64 vU = 0;
         qint64 vS = 0;
+        double vD = 0.0;
 
         bool isSigned = false;
+        bool isDouble = false;
         if (v.type() == QVariant::Type::LongLong ||
             v.type() == QVariant::Type::Int ||
             v.type() == QVariant::Type::Char) {
@@ -258,7 +268,8 @@ AsterixEncoder::encode_fixed(QVariant &data_asterix,
           vS = v.toLongLong();
         } else if (v.type() == QVariant::Type::Double) {
           isSigned = true;
-          vS = v.toDouble();
+          isDouble = true;
+          vD = v.toDouble();
         } else if (v.type() == QVariant::Type::ULongLong ||
                    v.type() == QVariant::Type::UInt) {
           isSigned = false;
@@ -274,9 +285,12 @@ AsterixEncoder::encode_fixed(QVariant &data_asterix,
           }
 
           const double scale = scale_str.toDouble();
-
           if (isSigned) {
-            vS = vS / scale;
+            if (isDouble) {
+              vS = vD / scale;
+            } else {
+              vS = vS / scale;
+            }
           } else {
             vU = vU / scale;
           }
@@ -375,15 +389,16 @@ AsterixEncoder::encode_compound(QVariant &data_asterix,
 
     static const QStringList nodeNameList = {
         AN::fixedName, AN::repetitiveName, AN::variableName, AN::compoundName};
-    if (!nodeNameList.contains(cn.nodeName())) {
+    const QString nodeName = cn.nodeName();
+    if (!nodeNameList.contains(nodeName)) {
       continue;
     }
 
     index += 1;
 
-    if (index == 1) {
-      continue;
-    }
+    //    if (index == 1) {
+    //      continue;
+    //    }
 
     if (index % CHAR_WIDTH == 0) {
       index += 1;
@@ -391,13 +406,13 @@ AsterixEncoder::encode_compound(QVariant &data_asterix,
 
     std::tuple<int, QByteArray> res;
 
-    if (cn.nodeName() == AN::fixedName) {
+    if (nodeName == AN::fixedName) {
       res = encode_fixed(data_asterix, cn);
-    } else if (cn.nodeName() == AN::repetitiveName) {
+    } else if (nodeName == AN::repetitiveName) {
       res = encode_repetitive(data_asterix, cn);
-    } else if (cn.nodeName() == AN::variableName) {
+    } else if (nodeName == AN::variableName) {
       res = encode_variable(data_asterix, cn);
-    } else if (cn.nodeName() == AN::compoundName) {
+    } else if (nodeName == AN::compoundName) {
       res = encode_compound(data_asterix, cn);
     }
 
@@ -443,6 +458,21 @@ AsterixEncoder::encode_compound(QVariant &data_asterix,
   res.append(result);
 
   return std::make_tuple(encoded_num, res);
+}
+
+QVariantMap AsterixEncoder::parseJson(const QString &str) const {
+  {
+    QJsonParseError error;
+
+    QJsonObject obj = QJsonDocument::fromJson(str.toLatin1(), &error).object();
+    if (error.error != QJsonParseError::NoError) {
+      qDebug() << "parse error: " << error.errorString();
+
+      return {};
+    }
+
+    return obj.toVariantMap();
+  }
 }
 
 } // namespace qasterix

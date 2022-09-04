@@ -25,6 +25,14 @@ public:
   /**
    * @brief encode Encode asterix message
    * @param catNum Number of category asterix message
+   * @param obj String with asterix message description
+   * @return Data of asterix message
+   */
+  QByteArray encode(const quint8 catNum, const QString &objStr);
+
+  /**
+   * @brief encode Encode asterix message
+   * @param catNum Number of category asterix message
    * @param obj Object with asterix message description
    * @return Data of asterix message
    */
@@ -90,6 +98,8 @@ protected:
    * @return Success of operation
    */
   bool arrayNotNull(const QByteArray &data) const;
+
+  QVariantMap parseJson(const QString &str) const;
 
 private:
   QDomElement cat;            ///< Xml description of asterix message

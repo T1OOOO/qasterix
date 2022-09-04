@@ -186,6 +186,10 @@ QVariantMap AsterixDecoder::decode_fixed(const QDomElement &datafield) {
     }
 
     const QString bit_name = bits_elements.at(0).toElement().text();
+    static const QStringList bit_names = {AN::fxName, AN::spareName};
+    if (bit_names.contains(bit_name)) {
+      continue;
+    }
 
     QString bit = bits.attribute(AN::bitName);
     if (bit != "") {
@@ -202,16 +206,16 @@ QVariantMap AsterixDecoder::decode_fixed(const QDomElement &datafield) {
     } else {
       quint16 from_ = bits.attribute(AN::fromName).toInt();
       quint16 to_ = bits.attribute(AN::toName).toInt();
-      const quint16 size_ = from_ - to_ + 1;
-
       if (from_ < to_) {
         std::swap(from_, to_);
       }
+      const quint16 size_ = from_ - to_ + 1;
       const quint16 from_r_ = length_b - from_;
 
       quint64 resultU =
           get_bitfield(reinterpret_cast<const uint8_t *>(_bytes.constData()),
-                       _bytes.size(), from_r_, size_);
+                       _bytes.size(), from_r_, size_) &
+          bitmask(size_);
 
       if (resultU == 0) {
         continue;
@@ -219,13 +223,12 @@ QVariantMap AsterixDecoder::decode_fixed(const QDomElement &datafield) {
 
       bool isSigned = false;
       if (bits.attribute(AN::encodeName) == AN::signedName) {
-        if (resultU & ((quint64)1 << (from_ - to_))) {
-          quint64 resultS = -(qint64)((qint64)1 << (from_ - to_ + (qint64)1)) +
-                            (qint64)resultU;
+        if ((resultU & ((quint64)1 << (size_ - 1))) > 0) {
+          quint64 resultS = ((qint64)(-1) & ~bitmask(size_)) + (qint64)resultU;
 
-          isSigned = true;
           results[bit_name] = resultS;
         }
+        isSigned = true;
       }
 
       if (!results.contains(bit_name)) {
@@ -262,15 +265,11 @@ QVariantMap AsterixDecoder::decode_variable(const QDomElement &datafield) {
   for (int i = 0; i < fixed_elements.count(); i++) {
     const QDomElement fixed = fixed_elements.at(i).toElement();
     QVariantMap r = decode_fixed(fixed);
+    if (r.contains(AN::fxName)) {
+      continue;
+    }
+
     results.insert(r);
-
-    if (!r.contains(AN::fxName)) {
-      break;
-    }
-
-    if (r[AN::fxName] == 0) {
-      break;
-    }
   }
 
   return results;
@@ -339,7 +338,8 @@ QVariantMap AsterixDecoder::decode_compound(const QDomElement &datafield) {
 
     const QStringList cnList = {AN::fixedName, AN::repetitiveName,
                                 AN::variableName, AN::compoundName};
-    if (!cnList.contains(cn.nodeName())) {
+    const QString nodeName = cn.nodeName();
+    if (!cnList.contains(nodeName)) {
       continue;
     }
 
@@ -351,14 +351,14 @@ QVariantMap AsterixDecoder::decode_compound(const QDomElement &datafield) {
     int rep_counter = 0;
 
     QVariant r;
-    if (cn.nodeName() == AN::fixedName) {
+    if (nodeName == AN::fixedName) {
       r = decode_fixed(cn);
-    } else if (cn.nodeName() == AN::repetitiveName) {
+    } else if (nodeName == AN::repetitiveName) {
       r = decode_repetitive(cn);
       rep_counter++;
-    } else if (cn.nodeName() == AN::variableName) {
+    } else if (nodeName == AN::variableName) {
       r = decode_variable(cn);
-    } else if (cn.nodeName() == AN::compoundName) {
+    } else if (nodeName == AN::compoundName) {
       r = decode_compound(cn);
     }
 
